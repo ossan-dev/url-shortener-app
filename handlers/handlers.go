@@ -28,6 +28,7 @@ func Shorten(c *gin.Context) {
 	var urlWrapper, res UrlWrapper
 	if err := c.ShouldBind(&urlWrapper); err != nil {
 		c.String(http.StatusBadRequest, err.Error())
+		return
 	}
 
 	// check if it's already present in the map
@@ -45,5 +46,20 @@ func Shorten(c *gin.Context) {
 }
 
 func Unshorten(c *gin.Context) {
-	c.String(200, "Unshorten")
+	var urlWrapper UrlWrapper
+	if err := c.ShouldBind(&urlWrapper); err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// check if this short url has been already converted
+	for k, v := range Store {
+		if v == urlWrapper.Url {
+			c.JSON(http.StatusOK, UrlWrapper{Url: k})
+			return
+		}
+	}
+
+	c.String(http.StatusNotFound, fmt.Sprintf("the url %q is not known", urlWrapper.Url))
+
 }
