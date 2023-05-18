@@ -2,6 +2,7 @@ package main
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 	"urlshortener/handlers"
 	"urlshortener/utils"
@@ -11,7 +12,7 @@ import (
 
 func main() {
 	utils.Rand = rand.NewSource(time.Now().UnixNano())
-	handlers.Store = make(map[string]string)
+	handlers.Store = sync.Map{}
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
 

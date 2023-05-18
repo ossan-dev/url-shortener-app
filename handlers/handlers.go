@@ -2,64 +2,64 @@ package handlers
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
+	"sync"
 
 	"urlshortener/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
-var Store map[string]string
+var Store sync.Map
 
 type UrlWrapper struct {
 	Url string `json:"url" binding:"required"`
 }
 
-func generateRandomCharacters(chararcterSet string, numberOfDigits int) string {
-	bytes := make([]byte, numberOfDigits)
-	for k := range bytes {
-		bytes[k] = chararcterSet[rand.Intn(len(chararcterSet))]
-	}
-	return string(bytes)
-}
-
 func Shorten(c *gin.Context) {
-	var urlWrapper, res UrlWrapper
-	if err := c.ShouldBind(&urlWrapper); err != nil {
+	var longUrl, shortUrl UrlWrapper
+	if err := c.ShouldBind(&longUrl); err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// check if it's already present in the map
-	value, isFound := Store[urlWrapper.Url]
+	value, isFound := Store.Load(longUrl.Url)
 	if isFound {
-		res.Url = value
-		c.JSON(http.StatusOK, res)
+		shortUrl.Url = value.(string)
+		c.JSON(http.StatusOK, shortUrl)
 		return
 	}
 
 	// generate new url
-	res.Url = fmt.Sprintf("%v%v", utils.ShortPrefix, generateRandomCharacters(utils.ChararcterSet, 6))
-	Store[urlWrapper.Url] = res.Url
-	c.JSON(http.StatusOK, res)
+	shortUrl.Url = fmt.Sprintf("%v%v", utils.ShortPrefix, utils.GenerateRandomCharacters(utils.ChararcterSet, 6))
+	Store.Store(longUrl.Url, shortUrl.Url)
+	c.JSON(http.StatusOK, shortUrl)
 }
 
 func Unshorten(c *gin.Context) {
-	var urlWrapper UrlWrapper
-	if err := c.ShouldBind(&urlWrapper); err != nil {
+	var shortUrl UrlWrapper
+	if err := c.ShouldBind(&shortUrl); err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// check if this short url has been already converted
-	for k, v := range Store {
-		if v == urlWrapper.Url {
-			c.JSON(http.StatusOK, UrlWrapper{Url: k})
-			return
+	var longUrl UrlWrapper
+	var isFound bool
+	Store.Range(func(key, value any) bool {
+		if value.(string) == shortUrl.Url {
+			longUrl.Url = key.(string)
+			isFound = true
+			return false
 		}
+		return true
+	})
+
+	if !isFound {
+		c.String(http.StatusNotFound, fmt.Sprintf("the url %q is not known", shortUrl.Url))
+		return
 	}
 
-	c.String(http.StatusNotFound, fmt.Sprintf("the url %q is not known", urlWrapper.Url))
-
+	c.JSON(http.StatusOK, longUrl)
 }

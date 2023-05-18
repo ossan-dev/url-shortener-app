@@ -6,3 +6,11 @@ const ChararcterSet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234
 const ShortPrefix = "http://sho.rt/"
 
 var Rand rand.Source
+
+func GenerateRandomCharacters(chararcterSet string, numberOfDigits int) string {
+	bytes := make([]byte, numberOfDigits)
+	for k := range bytes {
+		bytes[k] = chararcterSet[rand.Intn(len(chararcterSet))]
+	}
+	return string(bytes)
+}
