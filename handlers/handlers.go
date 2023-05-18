@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
+	"urlshortener/models"
 	"urlshortener/utils"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 var Store map[string]string
@@ -22,17 +25,20 @@ func Shorten(c *gin.Context) {
 		return
 	}
 
-	// check if it's already present in the map
-	value, isFound := Store[longUrl.Url]
-	if isFound {
-		shortUrl.Url = value
-		c.JSON(http.StatusOK, shortUrl)
+	// check if it's present in the db
+	var urlRetrieved models.Url
+	gormDb := c.MustGet(utils.DbKey).(*gorm.DB)
+	if err := gormDb.Model(&models.Url{}).First(&urlRetrieved, "long_url = ?", longUrl.Url).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			shortUrl.Url = fmt.Sprintf("%v%v", utils.ShortPrefix, utils.GenerateRandomCharacters(utils.ChararcterSet, 6))
+			gormDb.Create(models.Url{LongUrl: longUrl.Url, ShortUrl: shortUrl.Url})
+			c.JSON(http.StatusOK, shortUrl)
+			return
+		}
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	// generate new url
-	shortUrl.Url = fmt.Sprintf("%v%v", utils.ShortPrefix, utils.GenerateRandomCharacters(utils.ChararcterSet, 6))
-	Store[longUrl.Url] = shortUrl.Url
+	shortUrl.Url = urlRetrieved.ShortUrl
 	c.JSON(http.StatusOK, shortUrl)
 }
 
@@ -44,13 +50,14 @@ func Unshorten(c *gin.Context) {
 	}
 
 	// check if this short url has been already converted
-	for k, v := range Store {
-		if v == shortUrl.Url {
-			c.JSON(http.StatusOK, UrlWrapper{Url: k})
+	var urlRetrieved models.Url
+	gormDb := c.MustGet(utils.DbKey).(*gorm.DB)
+	if err := gormDb.Model(&models.Url{}).First(&urlRetrieved, "short_url = ?", shortUrl.Url).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.String(http.StatusNotFound, fmt.Sprintf("the url %q is not known", shortUrl.Url))
 			return
 		}
 	}
 
-	c.String(http.StatusNotFound, fmt.Sprintf("the url %q is not known", shortUrl.Url))
-
+	c.JSON(http.StatusOK, UrlWrapper{Url: urlRetrieved.LongUrl})
 }

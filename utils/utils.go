@@ -4,6 +4,7 @@ import "math/rand"
 
 const ChararcterSet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 const ShortPrefix = "http://sho.rt/"
+const DbKey = "DB"
 
 var Rand rand.Source
 
