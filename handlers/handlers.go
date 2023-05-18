@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"math/rand"
 	"net/http"
 
 	"urlshortener/utils"
@@ -16,50 +15,42 @@ type UrlWrapper struct {
 	Url string `json:"url" binding:"required"`
 }
 
-func generateRandomCharacters(chararcterSet string, numberOfDigits int) string {
-	bytes := make([]byte, numberOfDigits)
-	for k := range bytes {
-		bytes[k] = chararcterSet[rand.Intn(len(chararcterSet))]
-	}
-	return string(bytes)
-}
-
 func Shorten(c *gin.Context) {
-	var urlWrapper, res UrlWrapper
-	if err := c.ShouldBind(&urlWrapper); err != nil {
+	var longUrl, shortUrl UrlWrapper
+	if err := c.ShouldBind(&longUrl); err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// check if it's already present in the map
-	value, isFound := Store[urlWrapper.Url]
+	value, isFound := Store[longUrl.Url]
 	if isFound {
-		res.Url = value
-		c.JSON(http.StatusOK, res)
+		shortUrl.Url = value
+		c.JSON(http.StatusOK, shortUrl)
 		return
 	}
 
 	// generate new url
-	res.Url = fmt.Sprintf("%v%v", utils.ShortPrefix, generateRandomCharacters(utils.ChararcterSet, 6))
-	Store[urlWrapper.Url] = res.Url
-	c.JSON(http.StatusOK, res)
+	shortUrl.Url = fmt.Sprintf("%v%v", utils.ShortPrefix, utils.GenerateRandomCharacters(utils.ChararcterSet, 6))
+	Store[longUrl.Url] = shortUrl.Url
+	c.JSON(http.StatusOK, shortUrl)
 }
 
 func Unshorten(c *gin.Context) {
-	var urlWrapper UrlWrapper
-	if err := c.ShouldBind(&urlWrapper); err != nil {
+	var shortUrl UrlWrapper
+	if err := c.ShouldBind(&shortUrl); err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// check if this short url has been already converted
 	for k, v := range Store {
-		if v == urlWrapper.Url {
+		if v == shortUrl.Url {
 			c.JSON(http.StatusOK, UrlWrapper{Url: k})
 			return
 		}
 	}
 
-	c.String(http.StatusNotFound, fmt.Sprintf("the url %q is not known", urlWrapper.Url))
+	c.String(http.StatusNotFound, fmt.Sprintf("the url %q is not known", shortUrl.Url))
 
 }
