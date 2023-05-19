@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"time"
 	"urlshortener/handlers"
+	"urlshortener/middlewares"
 	"urlshortener/utils"
 
 	"github.com/gin-gonic/gin"
@@ -15,8 +16,10 @@ func main() {
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
 
-	r.POST("/shorten", handlers.Shorten)
-	r.POST("/unshorten", handlers.Unshorten)
+	r.POST("/shorten", middlewares.CheckAuthentication(), handlers.Shorten)
+	r.POST("/unshorten", middlewares.CheckAuthentication(), handlers.Unshorten)
+
+	r.POST("/signup", handlers.Signup)
 
 	if err := r.Run(":8080"); err != nil {
 		panic(err)

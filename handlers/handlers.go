@@ -16,6 +16,7 @@ type UrlWrapper struct {
 }
 
 func Shorten(c *gin.Context) {
+	fmt.Println("username:", c.GetString("Username"))
 	var longUrl, shortUrl UrlWrapper
 	if err := c.ShouldBind(&longUrl); err != nil {
 		c.String(http.StatusBadRequest, err.Error())
@@ -37,6 +38,7 @@ func Shorten(c *gin.Context) {
 }
 
 func Unshorten(c *gin.Context) {
+	fmt.Println("username:", c.GetString("Username"))
 	var shortUrl UrlWrapper
 	if err := c.ShouldBind(&shortUrl); err != nil {
 		c.String(http.StatusBadRequest, err.Error())

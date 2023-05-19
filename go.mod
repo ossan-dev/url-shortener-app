@@ -2,7 +2,10 @@ module urlshortener
 
 go 1.20
 
-require github.com/gin-gonic/gin v1.9.0
+require (
+	github.com/gin-gonic/gin v1.9.0
+	github.com/golang-jwt/jwt v3.2.2+incompatible
+)
 
 require (
 	github.com/bytedance/sonic v1.8.0 // indirect
