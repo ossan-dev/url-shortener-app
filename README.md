@@ -9,3 +9,4 @@ All of the branches are based on the `main` which can be considered the MVP for 
 - `main`: done
 - `sync-map`: done
 - `postgres`: done
+- `jwt-auth`: done
